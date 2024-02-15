@@ -1,0 +1,4 @@
+[11.02.2024]
+* Add: deploy gitlab in docker-compose
+* Add: deploy and register shared gitlab runner in docker
+* Add: deploy k8s clustes in ci-cd terraform

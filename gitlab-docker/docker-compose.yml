@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:16.6.7-ce.0'
+    restart: always
+    hostname: 'gitlab.ldy68.ru'
+    networks:
+      gitnet:
+        ipv4_address: 172.222.0.10
+
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://gitlab.ldy68.ru'
+        letsencrypt['enable'] = true
+
+        nginx['enable'] = true
+        nginx['listen_port'] = 443
+        nginx['listen_https'] =  true
+        nginx['redirect_http_to_https'] = true
+
+        gitlab_rails['registry_enabled'] = false
+        # gitlab_rails['registry_http_addr'] = "localhost:5000"
+        # gitlab_rails['registry_api_url'] = "http://localhost:5000"
+        # registry_external_url 'http://registry.ldy68.ru'
+        # registry_nginx['enable'] = true
+        # registry['token_realm'] = 'http://gitlab.ldy68.ru'
+
+    ports:
+      - '80:80'
+      - '443:443'
+      - '22222:22'
+      # - '443:443'
+
+    volumes:
+      - './gitlab/etc:/etc/gitlab'
+      - './gitlab/logs:/var/log/gitlab'
+      - './gitlab/data:/var/opt/gitlab'
+      - '/etc/ssl:/etc/ssl:ro'
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "10"
+
+networks:
+  gitnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet:  172.222.0.0/16

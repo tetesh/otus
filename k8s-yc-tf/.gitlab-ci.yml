@@ -1,0 +1,81 @@
+image:
+  name: registry.gitlab.com/gitlab-org/terraform-images/releases/1.5:v1.2.0
+
+stages:
+  - validate
+  - plan
+  - deploy
+  - destroy
+ 
+variables:
+  TF_ROOT: ${CI_PROJECT_DIR}
+  TF_STATE_NAME: ${TF_STATE_NAME:-default}
+  TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${CI_PROJECT_NAME}
+ 
+cache:
+  key: "${TF_ROOT}"
+  paths:
+    - ${TF_ROOT}/.terraform/
+
+.yc_before:
+  before_script:
+    - |
+      cat >> ~/.terraformrc << EOF
+      provider_installation {
+        network_mirror {
+          url = "https://terraform-mirror.yandexcloud.net/"
+          include = ["registry.terraform.io/*/*"]
+        }
+        direct {
+          exclude = ["registry.terraform.io/*/*"]
+        }
+      }
+      EOF
+    - cat ~/.terraformrc 
+
+terraform-validate:
+  stage: validate
+  extends: .yc_before
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform validate
+  rules:
+    - if: $CI_COMMIT_BRANCH != "destroy"
+ 
+terraform-plan:
+  stage: plan
+  extends: .yc_before
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform plan
+    - gitlab-terraform plan-json
+  resource_group: ${TF_STATE_NAME}
+  artifacts:
+    paths:
+      - ${TF_ROOT}/plan.cache
+    reports:
+      terraform: ${TF_ROOT}/plan.json
+  rules:
+    - if: $CI_COMMIT_BRANCH != "destroy"
+ 
+terraform-deploy:
+  stage: deploy
+  extends: .yc_before
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform apply
+  resource_group: ${TF_STATE_NAME}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  when: manual
+ 
+terraform-destroy all (WARNING!!!):
+  stage: destroy
+  extends: .yc_before
+  script:
+    - cd "${TF_ROOT}"
+    - gitlab-terraform destroy
+  resource_group: ${TF_STATE_NAME}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "destroy"
+  when: manual
