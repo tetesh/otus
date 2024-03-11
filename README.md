@@ -16,9 +16,9 @@
 4. Readiness can be checked `docker compose logs` 
    
 ## Deploy k8s zonal cluster YC:
-1. Create gitlab project and copy git url
-2. Add CI-CD Variables (read README.md in k8s-yc-tf)
-3. Push local gitlab-runner-docker to you gitlab
+1. Create gitlab project and copy git url  
+2. Add CI-CD Variables (read README.md in k8s-yc-tf)  
+3. Push local gitlab-runner-docker to you gitlab  
 ```cd gitlab-runner-docker
 git init --initial-branch=master
 git remote add origin {git url}
@@ -28,3 +28,16 @@ git push --set-upstream origin master
 ```
 4. In the automatically launched pipeline, look at the plan, if everything suits you, run the manual job `terraform apply`
 5. Read terraform output, you will need it to get kubeconfig
+  
+## Deploy nginx-ingress in a cluster using helm terraform provider:
+1. Create gitlab project and copy git url  
+2. Add CI-CD Variables (read README.md in nginx-ingress-tf)  
+3. Push local nginx-ingress-tf to you gitlab  
+```cd nginx-ingress-tf
+git init --initial-branch=master
+git remote add origin {git url}
+git add .
+git commit -m "Initial commit"
+git push --set-upstream origin master
+```
+4. In the automatically launched pipeline, look at the plan, if everything suits you, run the manual job `terraform apply`

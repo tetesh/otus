@@ -4,4 +4,5 @@
 * Add: deploy k8s clustes in ci-cd terraform
   
 [11.03.2024]  
-* Add: SNAT for k8s cluster
+* Add: SNAT for k8s cluster  
+* Add: deploy nginx-ingress in a cluster using helm terraform provider
