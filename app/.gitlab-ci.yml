@@ -1,0 +1,66 @@
+image:
+  name: mdeterman/k8-helm3:3.14
+
+
+stages:
+- template
+- deploy
+- destroy-dry-run
+- destroy
+
+
+variables:
+  HELMCHART_NAME: onlineboutique
+  HELMCHART_PATH: onlineboutique
+  NAMESPACE: app
+  
+############## Main deploy #####################
+
+template-main:
+  stage: template
+  rules:
+    - if: $CI_COMMIT_BRANCH != "destroy"
+
+  script:
+  - helm template -n ${CI_PROJECT_NAME} ${HELMCHART_NAME}
+          ./${HELMCHART_PATH}/
+          -f values.yaml
+############## Main deploy #####################
+
+deploy-main:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  when: manual
+  script:
+  - helm upgrade -n ${CI_PROJECT_NAME} ${HELMCHART_NAME}
+           ./${HELMCHART_PATH}/
+           -f values.yaml
+           --create-namespace
+           --namespace ${NAMESPACE}
+           --atomic
+           --install
+           --timeout 5m0s ;
+
+############### END main deploy ############################
+
+############## Main DESTROY DRY-RUN (PLAN) #####################
+destroy dry-run:
+  stage: destroy-dry-run
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == "destroy"
+  script:
+  - helm uninstall -n ${NAMESPACE} --dry-run ${HELMCHART_NAME}
+############### END DESTROY DRY-RUN (PLAN) ############################
+
+############## Main DESTROY #####################
+destroy (WARNING!!!):
+  stage: destroy
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "destroy"
+  script:
+  - helm uninstall -n ${NAMESPACE} ${HELMCHART_NAME}
+
+############### END main DESTROY ############################
