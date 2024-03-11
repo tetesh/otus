@@ -2,3 +2,6 @@
 * Add: deploy gitlab in docker-compose
 * Add: deploy and register shared gitlab runner in docker
 * Add: deploy k8s clustes in ci-cd terraform
+  
+[11.03.2024]  
+* Add: SNAT for k8s cluster

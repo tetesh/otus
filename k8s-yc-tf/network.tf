@@ -1,1 +1,1 @@
-resource "yandex_vpc_network" "vpc_otus" { name = "vpc_otus" }
+resource "yandex_vpc_network" "vpc_otus" { name = var.network_name }

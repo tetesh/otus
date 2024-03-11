@@ -253,7 +253,7 @@ variable "node_groups" {
       disk_type       = "network-ssd"
       disk_size       = 32
       preemptible     = false
-      nat             = false
+      nat             = true
       auto_repair     = true
       auto_upgrade    = true
       maintenance_day           = "monday"
@@ -321,7 +321,7 @@ variable "node_groups_defaults" {
     disk_type     = "network-ssd"
     disk_size     = 32
     preemptible   = false
-    nat           = false
+    nat           = true
     ipv4          = true
     ipv6          = false
   }
