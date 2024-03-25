@@ -14,3 +14,9 @@
 * Add: Configure Alerts to Telegram  
 * Add: Deploy and configure Elasticsearch, kibana, fluentd  
 * Add: Scale worker nodes k8s  
+  
+[25.03.2024]   
+* Add: Alertmanager template telegram  
+* Add: Blackbox exporter  
+* Add: Probe metrics  
+* Add: My app grafana dashboard  

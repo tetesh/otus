@@ -175,7 +175,11 @@ defaultRules:
   runbookUrl: "https://runbooks.prometheus-operator.dev/runbooks"
 
   ## Disabled PrometheusRule alerts
-  disabled: {}
+  disabled:
+    KubeSchedulerDown: true
+    KubeMemoryOvercommit: true
+    KubeControllerManagerDown: true
+
   # KubeAPIDown: true
   # NodeRAIDDegraded: true
 
@@ -191,13 +195,35 @@ defaultRules:
 
 ## Provide custom recording or alerting rules to be deployed into the cluster.
 ##
-additionalPrometheusRulesMap: {}
-#  rule-name:
-#    groups:
-#    - name: my_group
-#      rules:
-#      - record: my_record
-#        expr: 100 * my_record
+additionalPrometheusRulesMap:
+ rule-name:
+  groups:
+    - name: probes
+      rules:
+      - alert: ProbeFailed
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: error
+        annotations:
+          summary: "Probe failed (instance {{ $labels.instance }})"
+          description: "Probe failed\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+      - alert: SlowProbe
+        expr: avg_over_time(probe_duration_seconds[1m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow probe (instance {{ $labels.instance }})"
+          description: "Blackbox probe took more than 1s to complete\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+      - alert: HttpStatusCode
+        expr: probe_http_status_code <= 199 OR probe_http_status_code >= 400
+        for: 1m
+        labels:
+          severity: error
+        annotations:
+          summary: "HTTP Status Code (instance {{ $labels.instance }})"
+          description: "HTTP status code is not 200-399\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
 
 ##
 global:
@@ -270,6 +296,7 @@ alertmanager:
   ## Annotations for Alertmanager
   ##
   annotations: {}
+
 
   ## Api that prometheus will use to communicate with alertmanager. Possible values are v1, v2
   ##
@@ -375,8 +402,10 @@ alertmanager:
         api_url: "https://api.telegram.org"
         send_resolved: true
         parse_mode: "HTML"
+        message: |
+          {{`{{ template "telegram.alert.message" . }}`}}
     templates:
-    - /etc/alertmanager/*.tmpl
+    - '/etc/alertmanager/config/*.tmpl'
 
 
   ## Pass the Alertmanager configuration directives through Helm's templating
@@ -397,7 +426,53 @@ alertmanager:
   ## ref: https://prometheus.io/docs/alerting/notifications/
   ##      https://prometheus.io/docs/alerting/notification_examples/
   ##
-  templateFiles: {}
+  templateFiles:
+    telegram.tmpl: |-
+        {{ define "telegram.alert.message" }}
+        {{ if gt (len .Alerts.Firing) 0 }}
+        🚨  <b>Alerts Firing</b>:
+        {{ template "__text_alert_firing_list" .Alerts.Firing }}
+        {{ end }}
+        {{ if gt (len .Alerts.Resolved) 0 }}
+        ✅  <b>Alerts Resolved</b>:
+        {{ template "__text_alert_resolve_list" .Alerts.Resolved }}
+        {{ end }}
+        {{ end }}
+
+        {{ define "__text_alert_firing_list" }}
+        {{ range . }}
+        ❗️ <b>Alertname:</b> "{{ .Labels.alertname }}"
+        🔥 <b>Severity: {{ .Labels.severity }}</b>
+        🔥 <b>Instance: {{ .Labels.instance }}</b>
+        🔥 <b>Environment: {{ .Labels.env }}</b>
+        🅰️ <b>Summary:</b> <i>{{ .Annotations.summary }}</i>
+        🔴 <b>Description:</b>
+        
+         <i>{{ .Annotations.description }}</i>
+        
+        {{if .Annotations.support_url }}
+        Support link: <a href="{{ .Annotations.support_url }}">▶ click ◀</a>
+        {{ end }}
+        {{ end }}
+        {{ end }}
+                
+        {{ define "__text_alert_resolve_list" }}
+        {{ range . }}
+        🟢 <b>Alertname:</b> "{{ .Labels.alertname }}"
+        ⭐ <b>Severity: {{ .Labels.severity }}</b>
+        🔥<b>Instance: {{ .Labels.instance }}</b>
+        🔥<b>Environment: {{ .Labels.env }}</b>
+        🟩 <b>Summary:</b> <i>{{ .Annotations.summary }}</i>
+        🍀 <b>Description:</b>
+        
+         <i>{{ .Annotations.description }}</i>
+        
+        {{if .Annotations.support_url }}
+        Support link: <a href="{{ .Annotations.support_url }}">▶ click ◀</a>
+        {{ end }}
+        {{ end }}
+        {{ end }}
+
   #
   ## An example template:
   #   template_1.tmpl: |-
@@ -3746,7 +3821,48 @@ prometheus:
     ## The scrape configuration example below will find master nodes, provided they have the name .*mst.*, relabel the
     ## port to 2379 and allow etcd scraping provided it is running on all Kubernetes master nodes
     ##
-    additionalScrapeConfigs: []
+    additionalScrapeConfigs:
+    - job_name: 'blackbox-external-targets'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+      static_configs:
+        - targets:
+          - http://app.ldy68.ru
+          - http://frontend.app.svc:80
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: prometheus-blackbox-exporter:9115
+
+    - job_name: 'blackbox-tcp'
+      scrape_interval: 60s
+      metrics_path: /probe
+      params:
+        module: [tcp_connect]  # Look for TCP response
+      static_configs:
+        - targets:
+          - redis-cart.app.svc.cluster.local:6379
+          - recommendationservice.app.svc.cluster.local:8080
+          - productcatalogservice.app.svc.cluster.local:3550
+          - shippingservice.app.svc.cluster.local:50051
+          - paymentservice.app.svc.cluster.local:50051
+          - emailservice.app.svc.cluster.local:5000
+          - currencyservice.app.svc.cluster.local:7000
+          - checkoutservice.app.svc.cluster.local:5050
+          - cartservice.app.svc.cluster.local:7070
+          - adservice.app.svc.cluster.local:9555
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: prometheus-blackbox-exporter:9115
+
     # - job_name: kube-etcd
     #   kubernetes_sd_configs:
     #     - role: node

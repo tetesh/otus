@@ -11,6 +11,7 @@
 * Create dns records for prometheus, alermanager, grafana  
 * Change values.yml (if needed: grafana.ingress.hosts, grafana.adminPassword, prometheus.ingress.hosts, alertmanager.ingress.hosts, storageClassName's, etc..)  
 * Commit code to `master` branch
+* Deploy prometheus stack, deplooy blackbox exporter
 * View k8s dashboards by fqdn in the browser (grafana.ingress.hosts, prometheus.ingress.hosts, alertmanager.ingress.hosts)
 
 ### Destroy:
