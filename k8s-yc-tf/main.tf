@@ -21,6 +21,8 @@ module "kube" {
   node_groups = {
     "yc-k8s-ng-01" = {
       description = "Kubernetes otus nodes group 01"
+      node_memory = 16
+      node_cores  = 8
       fixed_scale = {
         size = 2
       }

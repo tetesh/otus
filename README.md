@@ -69,3 +69,16 @@ git push --set-upstream origin master
 ```
 4. In the automatically launched pipeline, look at the plan, if everything suits you, run the manual job `deploy-main`  
 For more details, see the project readme
+
+## Deploy efk in a cluster using helm docker image and scripts:
+1. Create gitlab project and copy git url  
+2. Push local app to you gitlab  
+```cd efk
+git init --initial-branch=master
+git remote add origin {git url}
+git add .
+git commit -m "Initial commit"
+git push --set-upstream origin master
+```
+1. In the automatically launched pipeline, look at the plan, if everything suits you, run the manual job `deploy-*`  
+For more details, see the project readme
