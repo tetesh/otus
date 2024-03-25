@@ -8,3 +8,7 @@
 * Add: deploy nginx-ingress in a cluster using helm terraform provider  
 * Add: deploy kube-prometheus-stack in a cluster using helm docker image and ci script  
 * Add: deploy opensource app onlinebutique in a cluster using helm docker image and ci script  
+
+[24.03.2024] 
+* Add: Basic auth for prometheus and alertmanager
+* Add: Configure Alerts to Telegram

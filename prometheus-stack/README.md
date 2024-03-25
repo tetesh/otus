@@ -2,8 +2,9 @@
 
 ### Requirements:
 * CI-CD Variables:  
-`KUBECONFIG` type file!  
-See how to get them [here](https://cloud.yandex.ru/ru/docs/managed-kubernetes/operations/connect/create-static-conf)  
+`KUBECONFIG` type file! See how to get them [here](https://cloud.yandex.ru/ru/docs/managed-kubernetes/operations/connect/create-static-conf)    
+`BASIC_AUTH` htpasswd string. Using for basic auth alertmanager and prometheus. More info https://kubernetes.github.io/ingress-nginx/examples/auth/basic/   
+`GRAFANA_ADMIN_PASSWORD` grafana admin user password  
 
 
 ### Deploy:

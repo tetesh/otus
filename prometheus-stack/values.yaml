@@ -333,9 +333,11 @@ alertmanager:
       routes:
       - receiver: 'null'
         matchers:
-          - alertname = "Watchdog"
+          alertname = "Watchdog"
+
     receivers:
     - name: 'null'
+
     templates:
     - '/etc/alertmanager/config/*.tmpl'
 
@@ -344,7 +346,38 @@ alertmanager:
   ## ref: https://prometheus.io/docs/alerting/configuration/#configuration-file
   ##      https://prometheus.io/webtools/alerting/routing-tree-editor/
   ##
-  stringConfig: ""
+  stringConfig: |-
+    route:
+      receiver: 'cloud-alerts-telegram'
+      group_wait: 30s       #  Частота
+      group_interval: 30s   #  уведомлений
+      group_by: ['alertname']
+
+      routes:
+      - receiver: 'cloud-alerts-telegram'
+        matchers:
+          - instance!~".*-stage.*"
+          - severity =~ "critical|warning|error"
+        continue: true
+        repeat_interval: 60m
+      - receiver: 'cloud-alerts-telegram'
+        matchers:
+          - instance =~ ".*-stage.*"
+          - severity =~ "critical|warning|error"
+        continue: true
+        repeat_interval: 180m
+
+    receivers:
+    - name: 'cloud-alerts-telegram'
+      telegram_configs:
+      - bot_token: '{{ .Values.alertmanager.tg_bot_token }}'
+        chat_id: -4198386064
+        api_url: "https://api.telegram.org"
+        send_resolved: true
+        parse_mode: "HTML"
+    templates:
+    - /etc/alertmanager/*.tmpl
+
 
   ## Pass the Alertmanager configuration directives through Helm's templating
   ## engine. If the Alertmanager configuration contains Alertmanager templates,
@@ -354,7 +387,7 @@ alertmanager:
   ##      https://prometheus.io/docs/alerting/configuration/#tmpl_string
   ##      https://prometheus.io/docs/alerting/notifications/
   ##      https://prometheus.io/docs/alerting/notification_examples/
-  tplConfig: false
+  tplConfig: true
 
   ## Alertmanager template files to format alerts
   ## By default, templateFiles are placed in /etc/alertmanager/config/ and if
@@ -391,7 +424,10 @@ alertmanager:
     # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
     ingressClassName: nginx
 
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: basic-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Access restricted. Authentication Required.'
 
     labels: {}
 
@@ -403,7 +439,7 @@ alertmanager:
 
     ## Hosts must be provided if Ingress is enabled.
     ##
-    hosts:
+    hosts: 
       - alertmanager.ldy68.ru
 
     ## Paths to use for ingress rules - one path should match the alertmanagerSpec.routePrefix
@@ -418,7 +454,7 @@ alertmanager:
     ## TLS configuration for Alertmanager Ingress
     ## Secret must be manually created in the namespace
     ##
-    # tls: []
+    tls: []
     # - secretName: alertmanager-general-tls
     #   hosts:
     #   - alertmanager.example.com
@@ -933,10 +969,12 @@ alertmanager:
   ## (use it for example to store hashed basic auth credentials)
   extraSecret:
     ## if not set, name will be auto generated
-    # name: ""
+    name: "basic-auth"
     annotations: {}
-    data: {}
-  #   auth: |
+    # data:
+    #   auth: |
+  
+      
   #     foo:$apr1$OFG3Xybp$ckL0FHDAkoXYIlH9.cysT0
   #     someoneelse:$apr1$DMZX2Z4q$6SbQIfyuLQd.xmo/P0m2c.
 
@@ -967,7 +1005,7 @@ grafana:
   ##
   defaultDashboardsEditable: true
 
-  adminPassword: prom-operatorZx!
+  # adminPassword: 
 
   rbac:
     ## If true, Grafana PSPs will be created
@@ -989,7 +1027,7 @@ grafana:
     # annotations:
     #   kubernetes.io/ingress.class: nginx
       # kubernetes.io/tls-acme: "true"
-
+    annotations: {}
     ## Labels to be added to the Ingress
     ##
     # labels: {}
@@ -3142,7 +3180,10 @@ prometheus:
     # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
     ingressClassName: nginx
 
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: basic-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Access restricted. Authentication Required.'
     labels: {}
 
     ## Redirect ingress to an additional defined port on the service

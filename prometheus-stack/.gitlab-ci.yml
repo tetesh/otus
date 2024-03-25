@@ -35,6 +35,9 @@ deploy-main:
   script:
   - helm upgrade -n ${CI_PROJECT_NAME} ${HELMCHART_NAME}
            ./${HELMCHART_PATH}/
+           --set alertmanager.extraSecret.data.auth=$BASIC_AUTH
+           --set grafana.adminPassword=$GRAFANA_ADMIN_PASSWORD
+           --set alertmanager.tg_bot_token=$TGBOT_TOKEN
            -f values.yaml
            --create-namespace
            --namespace ${NAMESPACE}
